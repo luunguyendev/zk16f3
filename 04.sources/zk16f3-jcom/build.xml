@@ -1,0 +1,68 @@
+<?xml version="1.0"?> 
+<project name="jcom" default="server-deploy">
+	<description>Compiles and runs a simple program</description>
+	<property file="build.properties"/>
+	
+	<target name="mvn-clean" description="Maven clean source code.">
+		<exec executable="cmd">
+			<arg value="/C" />
+			<arg value="mvn.cmd"/>
+			<arg value="clean"/>
+		</exec>
+	</target>
+
+	<target name="mvn-build" depends="mvn-clean">
+		<exec executable="cmd">
+			<arg value="/C" />
+			<arg value="mvn.cmd"/>
+			<arg value="install"/>
+		</exec>
+	</target>
+	
+	<target name="copy-to-server">
+		<copydir src="${project-dir}/src/main/webapp" dest="${app-server-dir}" />
+	</target>
+	
+	<target name="clean-server" depends="server-stop">
+		<delete dir="${app-server-dir}" />
+	</target>
+	
+	<target name="server-start">
+		<exec dir="${server-dir}/bin" executable="cmd">
+			<arg value="/C" />
+			<arg value="asadmin --user ${gf-user} --passwordFile ${project-dir}/password.txt --host ${gf-host} start-domain ${gf-domain}" />
+		</exec>
+	</target>
+	
+	<target name="server-stop">
+		<exec dir="${server-dir}/bin" executable="cmd">
+			<arg value="/C" />
+			<arg value="asadmin --user ${gf-user} --passwordFile ${project-dir}/password.txt --host ${gf-host} stop-domain ${gf-domain}" />
+		</exec>
+	</target>
+	
+	<target name="server-restart" depends="server-undeploy, server-stop, mvn-build, server-start, server-deploy" />
+
+	<target name="server-deploy" depends="mvn-build">
+		<exec dir="${server-dir}/bin" failonerror="true" executable="cmd">
+	    	<arg value="/C" />
+	    	<arg value="asadmin --user ${gf-user} --passwordFile ${project-dir}/password.txt --host ${gf-host} --port ${gf-admin-port} deploy ${project-dir}/target/${app-war}" />
+	    </exec>
+	</target>
+	
+	<target name="server-undeploy">
+		<exec dir="${server-dir}/bin" failonerror="true" executable="cmd">
+	    	<arg value="/C" />
+	    	<arg value="asadmin --user ${gf-user} --passwordFile ${project-dir}/password.txt --host ${gf-host} --port ${gf-admin-port} undeploy ${project-dir}/target/${app-name}" />
+	    </exec>
+	</target>
+	
+	<target name="server-redeploy" depends="server-undeploy,server-deploy" />
+	
+	<target name="server-debug" depends="mvn-build">
+		<exec dir="${server-dir}/bin" failonerror="true" executable="cmd">
+	    	<arg value="/C" />
+	    	<arg value="asadmin start-domain --debug domain1" />
+	    </exec>
+	</target>
+</project>
